@@ -1,0 +1,19 @@
+{
+	"name": "graphql-language-service-server-web-client",
+	"description": "VSCode part of a GraphQL language server in a web extension",
+	"author": "Gordan Nekić",
+	"license": "MIT",
+	"version": "0.0.1",
+	"publisher": "vscode",
+	"engines": {
+		"vscode": "^1.52.0"
+	},
+	"dependencies": {
+		"monaco-graphql": "^1.2.3",
+		"vscode-languageclient": "^7.0.0"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.52.0",
+		"@vscode/test-web": "^0.0.22"
+	}
+}
