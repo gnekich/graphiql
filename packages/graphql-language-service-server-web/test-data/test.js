@@ -9,30 +9,51 @@ const myQuery = doSomethingWithGraphQLString(/* GraphQL */ `
   mutation a {
     login(args: { username: "", password: "1235" }) {
       headerAccessToken
+      accessToken
+    }
+  }
+  subscription test {
+    notes {
+      id
+      subject
+      type
+    }
+  }
+  query getNotes {
+    notes {
+      content
+      subject
+      id
+    }
+  }
+  mutation updateNote {
+    insert_notes_one(
+      object: { content: "Test Note", subject: "Lorem Ipsum..." }
+    ) {
+      id
+      subject
+      content
     }
   }
   query b {
     vouchers_by_pk(id: "uuid") {
-      valid_until
+      a: campaign
+      name
+      type
     }
   }
   query z {
     vouchers {
       campaign
       code
+      value
     }
   }
   subscription s {
-    device_events(
-      distinct_on: payload
-      limit: 5
-      offset: 0
-      order_by: { created_at: asc_nulls_first }
-      where: { name: { _eq: "IoT" } }
-    ) {
-      name
-      payload
-      type
+    establishment_settings {
+      establishment {
+        id
+      }
     }
   }
 `);

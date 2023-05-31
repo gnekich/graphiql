@@ -3,11 +3,11 @@ import {
   TaggedTemplateExpression,
   TemplateLiteral,
 } from "@babel/types";
+import { parse, ParserOptions, ParserPlugin } from "@babel/parser";
 
 import { Position, Range } from "graphql-language-service";
+import * as VueParser from "@vue/compiler-sfc";
 
-import { parse, ParserOptions, ParserPlugin } from "@babel/parser";
-// import * as VueParser from '@vue/compiler-sfc';
 import type { Logger } from "vscode-languageserver";
 
 // Attempt to be as inclusive as possible of source text.
@@ -22,7 +22,12 @@ const PARSER_OPTIONS: ParserOptions = {
 const DEFAULT_STABLE_TAGS = ["graphql", "graphqls", "gql"];
 export const DEFAULT_TAGS = [...DEFAULT_STABLE_TAGS, "graphql.experimental"];
 
-type TagResult = { tag: string; template: string; range: Range };
+type TagResult = {
+  tag: string;
+  template: string;
+  range: Range;
+  projectName?: string;
+};
 
 interface TagVisitors {
   [type: string]: (node: any) => void;
@@ -71,38 +76,38 @@ type ParseVueSFCResult =
       scriptSetupAst?: import("@babel/types").Statement[];
       scriptAst?: import("@babel/types").Statement[];
     };
-// function parseVueSFC(source: string): ParseVueSFCResult {
-//   const { errors, descriptor } = VueParser.parse(source);
+function parseVueSFC(source: string): ParseVueSFCResult {
+  const { errors, descriptor } = VueParser.parse(source);
 
-//   if (errors.length !== 0) {
-//     return { type: 'error', errors };
-//   }
+  if (errors.length !== 0) {
+    return { type: "error", errors };
+  }
 
-//   let scriptBlock: VueParser.SFCScriptBlock | null = null;
-//   try {
-//     scriptBlock = VueParser.compileScript(descriptor, { id: 'foobar' });
-//   } catch (error) {
-//     if (
-//       error instanceof Error &&
-//       error.message === '[@vue/compiler-sfc] SFC contains no <script> tags.'
-//     ) {
-//       return {
-//         type: 'ok',
-//         scriptSetupAst: [],
-//         scriptAst: [],
-//         scriptOffset: 0,
-//       };
-//     }
-//     return { type: 'error', errors: [error as Error] };
-//   }
+  let scriptBlock: VueParser.SFCScriptBlock | null = null;
+  try {
+    scriptBlock = VueParser.compileScript(descriptor, { id: "foobar" });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "[@vue/compiler-sfc] SFC contains no <script> tags."
+    ) {
+      return {
+        type: "ok",
+        scriptSetupAst: [],
+        scriptAst: [],
+        scriptOffset: 0,
+      };
+    }
+    return { type: "error", errors: [error as Error] };
+  }
 
-//   return {
-//     type: 'ok',
-//     scriptOffset: scriptBlock.loc.start.line - 1,
-//     scriptSetupAst: scriptBlock?.scriptSetupAst,
-//     scriptAst: scriptBlock?.scriptAst,
-//   };
-// }
+  return {
+    type: "ok",
+    scriptOffset: scriptBlock.loc.start.line - 1,
+    scriptSetupAst: scriptBlock?.scriptSetupAst,
+    scriptAst: scriptBlock?.scriptAst,
+  };
+}
 
 export function findGraphQLTags(
   text: string,
@@ -114,31 +119,30 @@ export function findGraphQLTags(
 
   const plugins = BABEL_PLUGINS.slice(0, BABEL_PLUGINS.length);
 
-  // Sorry vue for now
-  const isVueLike = false; // ext === '.vue' || ext === '.svelte';
+  const isVueLike = ext === ".vue" || ext === ".svelte";
 
   let parsedASTs: { [key: string]: any }[] = [];
 
-  const scriptOffset = 0;
+  let scriptOffset = 0;
 
   if (isVueLike) {
-    // const parseVueSFCResult = parseVueSFC(text);
-    // if (parseVueSFCResult.type === 'error') {
-    //   logger.error(
-    //     `Could not parse the "${ext}" file at ${uri} to extract the graphql tags:`,
-    //   );
-    //   for (const error of parseVueSFCResult.errors) {
-    //     logger.error(String(error));
-    //   }
-    //   return [];
-    // }
-    // if (parseVueSFCResult.scriptAst !== undefined) {
-    //   parsedASTs.push(...parseVueSFCResult.scriptAst);
-    // }
-    // if (parseVueSFCResult.scriptSetupAst !== undefined) {
-    //   parsedASTs.push(...parseVueSFCResult.scriptSetupAst);
-    // }
-    // scriptOffset = parseVueSFCResult.scriptOffset;
+    const parseVueSFCResult = parseVueSFC(text);
+    if (parseVueSFCResult.type === "error") {
+      logger.error(
+        `Could not parse the "${ext}" file at ${uri} to extract the graphql tags:`
+      );
+      for (const error of parseVueSFCResult.errors) {
+        logger.error(String(error));
+      }
+      return [];
+    }
+    if (parseVueSFCResult.scriptAst !== undefined) {
+      parsedASTs.push(...parseVueSFCResult.scriptAst);
+    }
+    if (parseVueSFCResult.scriptSetupAst !== undefined) {
+      parsedASTs.push(...parseVueSFCResult.scriptSetupAst);
+    }
+    scriptOffset = parseVueSFCResult.scriptOffset;
   } else {
     const isTypeScript = [".ts", ".tsx", ".cts", ".mts"].includes(ext);
     if (isTypeScript) {
@@ -162,7 +166,10 @@ export function findGraphQLTags(
 
   const asts = parsedASTs;
 
-  const parseTemplateLiteral = (node: TemplateLiteral) => {
+  const parseTemplateLiteral = (
+    node: TemplateLiteral,
+    projectName?: string
+  ) => {
     const { loc } = node.quasis[0];
     if (loc) {
       if (node.quasis.length > 1) {
@@ -184,6 +191,7 @@ export function findGraphQLTags(
         tag: "",
         template,
         range,
+        projectName,
       });
     }
   };
@@ -239,13 +247,16 @@ export function findGraphQLTags(
       }
     },
     TemplateLiteral: (node: TemplateLiteral) => {
-      const hasGraphQLPrefix =
-        node.quasis[0].value.raw.startsWith("#graphql\n");
-      // I have no idea what is going on but this is crazy, leadingComments is missing from node object, dnno why?!
-      const hasGraphQLComment = Boolean(
-        node.leadingComments?.[0]?.value.match(/^\s*GraphQL\s*$/)
+      // Add project detection in the graphql comment and node comment
+      const GraphQLPrefixParsed = node.quasis[0].value.raw.match(
+        /^\s*GraphQL\s*(Project:\s*(.+?)\s*)?$/i
       );
-      // console.log("DEBUG: hasGraphQLComment", hasGraphQLComment, node);
+      const GraphQLCommentParsed = node.leadingComments?.[0]?.value.match(
+        /^\s*GraphQL\s*(Project:\s*(.+?)\s*)?$/i
+      );
+
+      const hasGraphQLPrefix = Boolean(GraphQLPrefixParsed);
+      const hasGraphQLComment = Boolean(GraphQLCommentParsed);
       if (hasGraphQLPrefix || hasGraphQLComment) {
         parseTemplateLiteral(node);
       }

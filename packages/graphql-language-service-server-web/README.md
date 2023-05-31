@@ -4,9 +4,45 @@ It is based on LSP web extension Example from Microsoft and graphiql/graphql-lan
 
 ## Mission
 
-- Create GraphQL LSP Server that can be compiled for webworker.
+- Create GraphQL LSP Server that can be transpiled for webworker.
+- Create package that gives multiple useful features at once, LSP, Syntax Highlighting, Autocomplete, Error checking, Query Execution and subscription.
+
+# Features
+
+- GraphQL syntax highlighting
+- GraphQL LSP server compatible with Web IDE
+- GraphQL Query/Mutation/Subscription Exec compatible with Web IDE
 
 ## Running
+
+Create new file `graphql.config.experimental.json` in root of 1 of your vscode workspaces.
+
+```
+{
+    "projects": [
+        {
+            "name": "Hasura API Multi Tenant Admin Dashboard",
+            "default": true,
+            "url": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_URL}}",
+            "headers": {
+                "x-hasura-admin-secret": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET}}",
+                "Authorization": "Bearer ey..."
+            }
+        }
+    ]
+}
+```
+
+Create new file `.env` if it does not exist in root of the workspace containing `graphql.config.experimental.json`, add values that will be replaced in `graphql.config.experimental.json`
+
+Example:
+
+```
+ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_URL="https://localhost:8080/v1/graphql"
+ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET="my-local-development-password"
+```
+
+Add or remove headers based on your API type, you can use custom headers.
 
 ### Development
 

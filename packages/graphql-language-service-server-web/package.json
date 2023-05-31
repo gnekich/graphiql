@@ -1,15 +1,14 @@
 {
 	"name": "graphql-language-service-server-web",
 	"description": "A GraphQL language server in a web extension",
+	"version": "0.0.3",
 	"author": "Gordan Nekić",
 	"license": "MIT",
-	"version": "0.0.1",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Microsoft/vscode-extension-samples"
 	},
-	"publisher": "vscode-samples",
-	"categories": [],
+	"publisher": "Cyberpunk d.o.o. | Hyper Lambda Project",
 	"keywords": [
 		"multi-root ready"
 	],
@@ -18,6 +17,31 @@
 	},
 	"activationEvents": [
 		"onLanguage:plaintext"
+	],
+	"icon": "assets/images/logo.png",
+	"contributors": [
+		{
+			"name": "Gordan Nekić",
+			"url": "https://gnekich.github.io/"
+		},
+		{
+			"name": "Rikki Schulte",
+			"url": "https://github.com/acao"
+		},
+		{
+			"name": "Divyendu Singh",
+			"url": "https://www.divyendusingh.com/"
+		},
+		{
+			"name": "GraphQL Contributors"
+		}
+	],
+	"galleryBanner": {
+		"color": "#032539",
+		"theme": "dark"
+	},
+	"categories": [
+		"Programming Languages"
 	],
 	"browser": "./client/dist/browserClientMain",
 	"contributes": {
@@ -54,9 +78,112 @@
 					}
 				}
 			}
+		],
+		"languages": [
+			{
+				"id": "graphql",
+				"extensions": [
+					".gql",
+					".graphql",
+					".graphqls"
+				],
+				"aliases": [
+					"GraphQL",
+					"graphql"
+				],
+				"configuration": "./language/language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "graphql",
+				"path": "./grammars/graphql.json",
+				"scopeName": "source.graphql"
+			},
+			{
+				"injectTo": [
+					"source.js",
+					"source.ts",
+					"source.js.jsx",
+					"source.tsx",
+					"source.vue",
+					"source.svelte"
+				],
+				"scopeName": "inline.graphql",
+				"path": "./grammars/graphql.js.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			},
+			{
+				"injectTo": [
+					"source.reason",
+					"source.ocaml"
+				],
+				"scopeName": "inline.graphql.re",
+				"path": "./grammars/graphql.re.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			},
+			{
+				"injectTo": [
+					"source.rescript"
+				],
+				"scopeName": "inline.graphql.res",
+				"path": "./grammars/graphql.rescript.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			},
+			{
+				"injectTo": [
+					"text.html.markdown"
+				],
+				"scopeName": "markdown.graphql.codeblock",
+				"path": "./grammars/graphql.markdown.codeblock.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			},
+			{
+				"injectTo": [
+					"source.python"
+				],
+				"scopeName": "inline.graphql.python",
+				"path": "./grammars/graphql.python.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			},
+			{
+				"injectTo": [
+					"text.html.php"
+				],
+				"scopeName": "inline.graphql.php",
+				"path": "./grammars/graphql.php.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			},
+			{
+				"injectTo": [
+					"source.scala"
+				],
+				"scopeName": "inline.graphql.scala",
+				"path": "./grammars/graphql.scala.json",
+				"embeddedLanguages": {
+					"meta.embedded.block.graphql": "graphql"
+				}
+			}
 		]
 	},
 	"scripts": {
+		"vsce:package": "vsce package",
+		"vsce:prepublish": "npm run vsce:package",
+		"vsce:publish": "vsce publish",
+		"open-vsx:publish": "ovsx publish",
+		"release": "npm run vsce:publish && npm run open-vsx:publish",
 		"vscode:prepublish": "npm run compile",
 		"compile": "webpack",
 		"watch": "webpack --watch",
@@ -76,5 +203,8 @@
 		"typescript": "^5.0.2",
 		"webpack": "^5.44.0",
 		"webpack-cli": "^4.7.2"
+	},
+	"dependencies": {
+		"dotenv": "^16.1.3"
 	}
 }

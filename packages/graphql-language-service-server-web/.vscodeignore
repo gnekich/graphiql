@@ -7,3 +7,8 @@
 contributing.md
 .travis.yml
 **/node_modules/**
+
+**/.env
+
+# Custom
+test-data/

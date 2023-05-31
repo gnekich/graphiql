@@ -35,6 +35,12 @@ const browserClientConfig = {
       path: require.resolve("path-browserify"),
     },
   },
+  // We need to use this because of graphql-js even for client (execute gql)
+  plugins: [
+    new webpack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV), // Important to webworkify graphql-js https://github.com/graphql/graphql-js
+    }),
+  ],
   module: {
     rules: [
       {

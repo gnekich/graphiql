@@ -9,8 +9,10 @@ import { LanguageClient } from "vscode-languageclient/browser";
 import parseDotEnvContent from "./utils/parseDotEnvContent";
 import readWorkspaceFileContents from "./utils/readWorkspaceFileContents";
 
+import setupExecuteGraphQLFunctionality from "./exec/setupExecuteGraphQLFunctionality";
+
 export const loadGraphQLProjectConfigs =
-  (client: LanguageClient) =>
+  (context: vscode.ExtensionContext, client: LanguageClient) =>
   async (content: string): Promise<void> => {
     // First thing we can do is to try to load the .env file and graphql.config file to parse projects in workspace
 
@@ -32,7 +34,7 @@ export const loadGraphQLProjectConfigs =
         const experimentalProjectConfigContent =
           await readWorkspaceFileContents(
             workspace,
-            "graphql-lsp-web.config.experimental.json"
+            "graphql.config.experimental.json"
           );
 
         let experimentalProjectConfig = { projects: [] };
@@ -71,7 +73,6 @@ export const loadGraphQLProjectConfigs =
                 newValue = newValue.replace(`{{${keyEnv}}}`, valueEnv);
               }
             }
-
             return newValue;
           })
         );
@@ -109,6 +110,13 @@ export const loadGraphQLProjectConfigs =
     if (!selectedProject) {
       return;
     }
+
+    // Add ability to execute queries.
+    await setupExecuteGraphQLFunctionality(
+      context,
+      allProjectsFromAllWorkspaces,
+      selectedProject
+    )();
 
     const responseSchemaJSON = await fetch(selectedProject?.url, {
       headers: {

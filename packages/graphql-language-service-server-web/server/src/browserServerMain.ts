@@ -18,13 +18,12 @@ const connection = createConnection(messageReader, messageWriter);
 
 /* from here on, all code is non-browser specific and could be shared with a regular extension */
 
-const options = {};
 const logger = new Logger(connection);
 
 // Initialize Handlers (Ex async function initializeHandlers)
 // Try to load handlers, we need to provide logger and connection
 try {
-  addHandlers({ connection, logger, ...options });
+  addHandlers({ connection, logger });
 } catch (error) {
   logger.error("There was an error initializing the server connection");
   logger.error(String(error));

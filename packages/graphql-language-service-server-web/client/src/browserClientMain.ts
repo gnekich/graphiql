@@ -47,13 +47,13 @@ export async function activate(context: ExtensionContext) {
     vscode.commands.registerCommand(
       "graphql-lsp-set-intelisense-project.provide-api-url",
       async () => {
-        await loadGraphQLProjectConfigs(client)("");
+        await loadGraphQLProjectConfigs(context, client)("");
       }
     )
   );
 
   // Try to load configs without any user interaction. (In cases where you have 1 workspace and 1 project, or at least 1 default project and schema is downloaded)
-  await loadGraphQLProjectConfigs(client)("");
+  await loadGraphQLProjectConfigs(context, client)("");
 }
 
 function createWorkerLanguageClient(

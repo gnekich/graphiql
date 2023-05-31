@@ -1,4 +1,3 @@
-import { URI } from "vscode-uri";
 import {
   CachedContent,
   Uri,
@@ -202,7 +201,7 @@ export class MessageProcessorWeb {
         documentSymbolProvider: true,
         completionProvider: {
           resolveProvider: true,
-          triggerCharacters: [" ", ":", "$", "(", "@"],
+          triggerCharacters: [" ", ":", "$", "(", "@", "\n", ",", "{"],
         },
         definitionProvider: true,
         textDocumentSync: 1,
@@ -787,6 +786,7 @@ export class MessageProcessorWeb {
 
     let result = null;
 
+    // OLD
     try {
       result = await this._languageService.getDefinition(
         query,
@@ -796,6 +796,17 @@ export class MessageProcessorWeb {
     } catch {
       // these thrown errors end up getting fired before the service is initialized, so lets cool down on that
     }
+
+    // // NEW
+    // try {
+    //   result = await getDefinition(
+    //     query,
+    //     toPosition(position),
+    //     textDocument.uri
+    //   );
+    // } catch {
+    //   // these thrown errors end up getting fired before the service is initialized, so lets cool down on that
+    // }
 
     const inlineFragments: string[] = [];
     try {
