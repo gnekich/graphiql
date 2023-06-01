@@ -151,11 +151,20 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
             data = JSON.stringify(JSON.parse(_data), null, 2);
             // eslint-disable-next-line no-empty
           } catch (error) {}
-          console.log(data);
+          console.log("CALLBACK", data);
           if (operation === "subscription") {
-            this.html = `<pre style="width: 100%">${data}</pre>` + this.html;
+            this.html =
+              `--- (GraphQL Subscription - New event: ${new Date().toISOString()}) ---` +
+              `<pre style="width: 100%">${data}</pre>` +
+              this.html;
+          } else if (operation === "mutation") {
+            this.html +=
+              `--- (GraphQL Mutation - ${new Date().toISOString()}) ---` +
+              `<pre style="width: 100%">${data}</pre>`;
           } else {
-            this.html += `<pre style="width: 100%">${data}</pre>`;
+            this.html +=
+              `--- (GraphQL Query - ${new Date().toISOString()}) ---` +
+              `<pre style="width: 100%">${data}</pre>`;
           }
           this.update(this.uri);
           this.updatePanel();
@@ -283,5 +292,10 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
 
   provideTextDocumentContent(_: Uri): ProviderResult<string> {
     return this.html;
+  }
+
+  public dispose() {
+    console.log("Content provider for webview disposed...");
+    this.networkHelper?.dispose();
   }
 }

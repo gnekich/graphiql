@@ -2,7 +2,7 @@
     "projects": [
         {
             "name": "Hasura API Multi Tenant Admin Dashboard",
-            "default": true,
+            "default": false,
             "url": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_URL}}",
             "headers": {
                 "x-hasura-admin-secret": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET}}",
@@ -16,6 +16,14 @@
             "headers": {
                 "x-hasura-admin-secret": "{{MAIN_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET}}",
                 "Authorization": "Bearer ey... {{PUT_YOUR_CUSTOM_ENV_VALUE_NAME}}"
+            }
+        },
+        {
+            "name": "Hasura TEST API",
+            "default": false,
+            "url": "http://localhost:38080/v1/graphql",
+            "headers": {
+                "x-hasura-admin-secret": "demo"
             }
         }
     ]

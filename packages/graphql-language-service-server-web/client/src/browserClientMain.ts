@@ -10,6 +10,7 @@ import { LanguageClientOptions } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/browser";
 
 import loadGraphQLProjectConfigs from "./loadGraphQLProjectConfigs";
+import setupExecuteGraphQLFunctionality from "./exec/setupExecuteGraphQLFunctionality";
 
 // this method is called when vs code is activated
 export async function activate(context: ExtensionContext) {
@@ -53,7 +54,18 @@ export async function activate(context: ExtensionContext) {
   );
 
   // Try to load configs without any user interaction. (In cases where you have 1 workspace and 1 project, or at least 1 default project and schema is downloaded)
-  await loadGraphQLProjectConfigs(context, client)("");
+  const configResults = await loadGraphQLProjectConfigs(context, client)("");
+
+  if (!configResults?.selectedProject) {
+    return;
+  }
+  // --------------------------------------------------------------------------------
+  // Add ability to execute queries.
+  await setupExecuteGraphQLFunctionality(
+    context,
+    configResults?.allProjectsFromAllWorkspaces,
+    configResults?.selectedProject
+  )();
 }
 
 function createWorkerLanguageClient(

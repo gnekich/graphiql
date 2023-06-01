@@ -8,12 +8,13 @@ import { LanguageClient } from "vscode-languageclient/browser";
 
 import parseDotEnvContent from "./utils/parseDotEnvContent";
 import readWorkspaceFileContents from "./utils/readWorkspaceFileContents";
-
-import setupExecuteGraphQLFunctionality from "./exec/setupExecuteGraphQLFunctionality";
+import introspectionQueryString from "./utils/introspectionQueryString";
 
 export const loadGraphQLProjectConfigs =
   (context: vscode.ExtensionContext, client: LanguageClient) =>
-  async (content: string): Promise<void> => {
+  async (
+    content: string
+  ): Promise<{ allProjectsFromAllWorkspaces: any; selectedProject: any }> => {
     // First thing we can do is to try to load the .env file and graphql.config file to parse projects in workspace
 
     // Go through every workspace folder.
@@ -56,12 +57,13 @@ export const loadGraphQLProjectConfigs =
       })
     );
 
+    // Fill the project object with the env variable values.
     const allProjectsFromAllWorkspaces = workspaces.reduce((acc, item) => {
       const projects = item?.experimentalProjectConfig?.projects ?? [];
       const workspaceEnvironmentVariables =
         item?.workspaceEnvironmentVariables ?? {};
       projects.map((project) => {
-        // At this point we can also do some magic, replace the configs witht he workspaces env values we parsed before.
+        // At this point we can also do some magic, replace the configs with the workspaces env values we parsed before.
         // WARNING BLACK MAGIC
         const projectWithEnvValues = JSON.parse(
           JSON.stringify(project, (key, value) => {
@@ -83,6 +85,8 @@ export const loadGraphQLProjectConfigs =
       });
       return acc;
     }, []);
+
+    // --------------------------------------------------------------------------------
 
     // Be smart, first check if there is only one project or at least 1 default project
     let target = { target: undefined };
@@ -106,28 +110,22 @@ export const loadGraphQLProjectConfigs =
       );
     }
 
-    const selectedProject = target.target;
+    const selectedProject = target?.target;
     if (!selectedProject) {
       return;
     }
 
-    // Add ability to execute queries.
-    await setupExecuteGraphQLFunctionality(
-      context,
-      allProjectsFromAllWorkspaces,
-      selectedProject
-    )();
+    // TODO: add support for offline schema.
 
     const responseSchemaJSON = await fetch(selectedProject?.url, {
       headers: {
         accept: "*/*",
-        "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
         "cache-control": "no-cache",
         "content-type": "application/json",
         pragma: "no-cache",
         ...selectedProject?.headers,
       },
-      body: '{"query":"\\n    query IntrospectionQuery {\\n      __schema {\\n        queryType { name }\\n        mutationType { name }\\n        subscriptionType { name }\\n        types {\\n          ...FullType\\n        }\\n        directives {\\n          name\\n          description\\n          locations\\n          args {\\n            ...InputValue\\n          }\\n        }\\n      }\\n    }\\n\\n    fragment FullType on __Type {\\n      kind\\n      name\\n      description\\n      fields(includeDeprecated: true) {\\n        name\\n        description\\n        args {\\n          ...InputValue\\n        }\\n        type {\\n          ...TypeRef\\n        }\\n        isDeprecated\\n        deprecationReason\\n      }\\n      inputFields {\\n        ...InputValue\\n      }\\n      interfaces {\\n        ...TypeRef\\n      }\\n      enumValues(includeDeprecated: true) {\\n        name\\n        description\\n        isDeprecated\\n        deprecationReason\\n      }\\n      possibleTypes {\\n        ...TypeRef\\n      }\\n    }\\n\\n    fragment InputValue on __InputValue {\\n      name\\n      description\\n      type { ...TypeRef }\\n      defaultValue\\n    }\\n\\n    fragment TypeRef on __Type {\\n      kind\\n      name\\n      ofType {\\n        kind\\n        name\\n        ofType {\\n          kind\\n          name\\n          ofType {\\n            kind\\n            name\\n            ofType {\\n              kind\\n              name\\n              ofType {\\n                kind\\n                name\\n                ofType {\\n                  kind\\n                  name\\n                  ofType {\\n                    kind\\n                    name\\n                  }\\n                }\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n  "}',
+      body: introspectionQueryString,
       method: "POST",
       mode: "cors",
       credentials: "omit",
@@ -161,6 +159,9 @@ export const loadGraphQLProjectConfigs =
       responseSchemaJSON,
       project: selectedProject,
     });
+
+    // Return back the selected projects and projects.
+    return { allProjectsFromAllWorkspaces, selectedProject };
   };
 
 export default loadGraphQLProjectConfigs;

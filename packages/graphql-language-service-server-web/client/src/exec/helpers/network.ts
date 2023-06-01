@@ -1,17 +1,9 @@
 import { visit, OperationTypeNode, GraphQLError } from "graphql";
 import { gql } from "graphql-tag";
-import * as ws from "ws";
-import { pipe, subscribe } from "wonka";
-
+// import * as ws from "ws";
 import { OutputChannel, workspace } from "vscode";
 
 import { createClient as createWSClient, OperationResult } from "graphql-ws";
-import {
-  CombinedError,
-  createClient,
-  defaultExchanges,
-  subscriptionExchange,
-} from "@urql/core";
 
 import {
   ExtractedTemplateLiteral,
@@ -21,20 +13,34 @@ import {
 
 import { UserVariables } from "../providers/exec-content";
 
+import { pipe, subscribe } from "wonka";
+import {
+  CombinedError,
+  createClient,
+  defaultExchanges,
+  subscriptionExchange,
+} from "@urql/core";
+
+import subscribeToAPI from "./subscriber";
+
 export class NetworkHelper {
   private outputChannel: OutputChannel;
   private sourceHelper: SourceHelper;
 
+  private listOfSubscriptions = [];
+  private consumer;
+
   constructor(outputChannel: OutputChannel, sourceHelper: SourceHelper) {
     this.outputChannel = outputChannel;
     this.sourceHelper = sourceHelper;
+    this.listOfSubscriptions = [];
   }
 
   private buildClient({
     operation,
     endpoint,
-  }: // updateCallback,
-  {
+    updateCallback,
+  }: {
     operation: string;
     endpoint: any;
     updateCallback: (data: string, operation: string) => void;
@@ -49,7 +55,7 @@ export class NetworkHelper {
       const wsClient = createWSClient({
         url: wsEndpointURL,
         connectionAckWaitTimeout: 3000,
-        webSocketImpl: ws,
+        // webSocketImpl: ws,
       });
       exchanges.push(
         subscriptionExchange({
@@ -79,6 +85,7 @@ export class NetworkHelper {
         errors?: GraphQLError[];
         data?: unknown;
       };
+
       if (errors || data) {
         cb(formatData(result), operation);
       }
@@ -120,10 +127,8 @@ export class NetworkHelper {
     // for (const fragmentInfo of fragmentInfos) {
     //   literal.content = fragmentInfo.content + "\n" + literal.content;
     // }
+    const parsedOperation = gql(literal.content);
 
-    const parsedOperation = gql`
-      ${literal.content}
-    `;
     return Promise.all(
       operationTypes.map(async (operation) => {
         const subscriber = this.buildSubscribeConsumer(
@@ -141,10 +146,43 @@ export class NetworkHelper {
             updateCallback,
           });
           if (operation === "subscription") {
-            pipe(
-              urqlClient.subscription(parsedOperation, variables),
-              subscribe(subscriber)
+            console.log("STARTING SUBSCRIBE! ");
+
+            const subscriptionClient = subscribeToAPI(
+              endpoint.url,
+              endpoint?.headers,
+              parsedOperation,
+              variables
             );
+
+            // TODO: Clear up the subscription client when user closes the tab.
+            const consumer = subscriptionClient.subscribe(
+              (eventData) => {
+                // Do something on receipt of the event
+                console.log("Received GraphQL event: ");
+                console.log(JSON.stringify(eventData, null, 2));
+                updateCallback(JSON.stringify(eventData, null, 2), operation);
+              },
+              (err) => {
+                console.log("Err");
+                console.log(err);
+              }
+            );
+
+            // this.listOfSubscriptions.push({
+            //   consumer,
+            // });
+
+            this.consumer = consumer;
+
+            // setTimeout(() => {
+            //   consumer.unsubscribe();
+            // }, 15000);
+
+            // pipe(
+            //   urqlClient.subscription(parsedOperation, variables),
+            //   subscribe(subscriber)
+            // );
           } else if (operation === "query") {
             pipe(
               urqlClient.query(parsedOperation, variables),
@@ -157,10 +195,19 @@ export class NetworkHelper {
             );
           }
         } catch (err) {
+          console.log(err);
           this.outputChannel.appendLine(`error executing operation:\n${err}`);
         }
       })
     );
+  }
+
+  public dispose() {
+    console.log("Disposing old subscriptions!");
+    if (this.consumer) {
+      this.consumer?.unsubscribe();
+      console.log("Done, clean subscription exit...");
+    }
   }
 }
 

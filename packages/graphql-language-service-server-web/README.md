@@ -1,11 +1,13 @@
 # GraphQL LSP for Web (vscode.dev)
 
 It is based on LSP web extension Example from Microsoft and graphiql/graphql-language-service-server
+It combines multiple super useful packages by the GraphQL Foundation and ports them to the vscode web.
 
 ## Mission
 
-- Create GraphQL LSP Server that can be transpiled for webworker.
-- Create package that gives multiple useful features at once, LSP, Syntax Highlighting, Autocomplete, Error checking, Query Execution and subscription.
+- Create GraphQL LSP Server that can be transpiled for webworker
+- Create package that gives multiple useful features at once, LSP, Syntax Highlighting, Autocomplete, Error checking, Query Execution and Subscription
+- Compatible with Hlambda.io web console (Working in a browser, vscode.web)
 
 # Features
 
@@ -16,6 +18,8 @@ It is based on LSP web extension Example from Microsoft and graphiql/graphql-lan
 ## Running
 
 Create new file `graphql.config.experimental.json` in root of 1 of your vscode workspaces.
+
+!This is not the same configuration as graphql.config from `graphql-config`
 
 ```
 {
@@ -43,6 +47,7 @@ ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET="my-local-developm
 ```
 
 Add or remove headers based on your API type, you can use custom headers.
+This way you can test your API as a different role, just create multiple projects with different headers.
 
 ### Development
 

@@ -4,6 +4,8 @@
 
 import * as vscode from "vscode";
 
+import { visit, OperationTypeNode } from "graphql";
+
 import { GraphQLContentProvider } from "./providers/exec-content";
 import { GraphQLCodeLensProvider } from "./providers/exec-codelens";
 import { ExtractedTemplateLiteral } from "./helpers/source";
@@ -55,6 +57,38 @@ export const setupExecuteGraphQLFunctionality =
     const commandContentProvider = vscode.commands.registerCommand(
       "vscode-graphql-execution.contentProvider",
       async (literal: ExtractedTemplateLiteral) => {
+        // We want to parse operation types before we do anything from literal.
+        const operationTypes: OperationTypeNode[] = [];
+        visit(literal.ast, {
+          OperationDefinition(node) {
+            operationTypes.push(node.operation);
+          },
+        });
+
+        console.log("literal", literal);
+        if (operationTypes.length !== 1) {
+          console.error(
+            "Error: There are more than one operational types in the literal query definition!"
+          );
+          return;
+        }
+
+        // Only for mutations we are extra safe, we need to ask for confirmation, could be a missclick
+        if (operationTypes.join(",") === "mutation") {
+          if (
+            !(await vscode.window.showInformationMessage(
+              `Are you sure your want to execute the ${operationTypes.join(
+                ","
+              )}? Just to be extra sure! | On (${selectedProject.name}) : ${
+                selectedProject.url
+              }`,
+              `Execute ${operationTypes.join(",")}`
+            ))
+          ) {
+            return;
+          }
+        }
+
         const uri = vscode.Uri.parse("graphql://authority/graphql");
 
         const panel = vscode.window.createWebviewPanel(
@@ -63,8 +97,7 @@ export const setupExecuteGraphQLFunctionality =
           vscode.ViewColumn.Two,
           {}
         );
-
-        console.log("literal", literal);
+        context.subscriptions.push(panel);
 
         const contentProvider = new GraphQLContentProvider(
           uri,
@@ -72,6 +105,11 @@ export const setupExecuteGraphQLFunctionality =
           literal,
           panel,
           selectedProject
+        );
+        context.subscriptions.push(
+          panel.onDidDispose(() => {
+            contentProvider.dispose();
+          })
         );
 
         const registration =

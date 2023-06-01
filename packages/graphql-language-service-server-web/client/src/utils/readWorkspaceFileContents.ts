@@ -6,7 +6,8 @@ import * as vscode from "vscode";
 
 export const readWorkspaceFileContents = async (
   workspace: vscode.WorkspaceFolder,
-  fileUrl: string
+  fileUrl: string,
+  silent = true
 ): Promise<string> => {
   const fileUri = vscode.Uri.joinPath(workspace.uri, fileUrl);
   try {
@@ -16,9 +17,11 @@ export const readWorkspaceFileContents = async (
     return sampleText;
   } catch {
     // No need to show error message, just ignore.
-    vscode.window.showInformationMessage(
-      `${fileUri.toString(true)} file does *not* exist`
-    );
+    if (!silent) {
+      vscode.window.showInformationMessage(
+        `${fileUri.toString(true)} file does *not* exist`
+      );
+    }
   }
 };
 

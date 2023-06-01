@@ -1,7 +1,8 @@
 {
 	"name": "graphql-language-service-server-web",
+	"displayName": "Hlambd GraphQL",
 	"description": "A GraphQL language server in a web extension",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"author": "Gordan Nekić",
 	"license": "MIT",
 	"repository": {
@@ -41,7 +42,8 @@
 		"theme": "dark"
 	},
 	"categories": [
-		"Programming Languages"
+		"Programming Languages",
+		"Language Packs"
 	],
 	"browser": "./client/dist/browserClientMain",
 	"contributes": {
