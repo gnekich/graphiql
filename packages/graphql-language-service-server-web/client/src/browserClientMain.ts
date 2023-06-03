@@ -50,7 +50,7 @@ export async function activate(context: ExtensionContext) {
   // Add command to load project config. (Command used to start everything)
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "graphql-lsp-set-intelisense-project.load-configs",
+      "graphql-language-service-server-web-hlambda.load-configs",
       async () => {
         return await loadGraphQLProjectConfigs();
       }
@@ -60,7 +60,7 @@ export async function activate(context: ExtensionContext) {
   // Add command to fetch remote configs
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project",
+      "graphql-language-service-server-web-hlambda.fetch-remote-graphql-schema-from-selected-project",
       async () => {
         return await fetchRemoteGraphQLSchema();
       }
@@ -68,7 +68,7 @@ export async function activate(context: ExtensionContext) {
   );
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "graphql-lsp-set-intelisense-project.fetch-workspace-graphql-schema-from-selected-project",
+      "graphql-language-service-server-web-hlambda.fetch-workspace-graphql-schema-from-selected-project",
       async () => {
         return getWorkspaceGraphQLSchema();
       }
@@ -78,7 +78,7 @@ export async function activate(context: ExtensionContext) {
   // This commands is used to create offline graphql schema backup.
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
+      "graphql-language-service-server-web-hlambda.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
       async () => {
         const result = await fetchRemoteGraphQLSchema();
         const doc = await vscode.workspace.openTextDocument({
@@ -94,7 +94,7 @@ export async function activate(context: ExtensionContext) {
   // Send update schema request to LSP.
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "graphql-lsp-set-intelisense-project.lsp-schema-update-request",
+      "graphql-language-service-server-web-hlambda.lsp-schema-update-request",
       async () => {
         // Send to the server new schema in JSON representation (from API)
         const { responseSchemaJSON, selectedProject } = store;
@@ -108,11 +108,21 @@ export async function activate(context: ExtensionContext) {
           vscode.window.showInformationMessage(`No project is selected.`);
           return;
         }
+
+        const reduceFilesToRefreshDiagnostics =
+          vscode.workspace.textDocuments.reduce((acc, textDocument) => {
+            acc.push({
+              uri: textDocument.uri.toString(),
+              text: textDocument.getText(),
+            });
+            return acc;
+          }, []);
+
         client.sendRequest("$customGraphQL/Schema", {
           responseSchemaJSON,
           project: selectedProject,
           textDocuments: JSON.parse(
-            JSON.stringify(vscode.workspace.textDocuments)
+            JSON.stringify(reduceFilesToRefreshDiagnostics)
           ),
         });
         return true;
@@ -123,7 +133,7 @@ export async function activate(context: ExtensionContext) {
   // Try to load configs without any user interaction. (In cases where you have 1 workspace and 1 project, or at least 1 default project and schema is downloaded)
   // Start!
   await vscode.commands.executeCommand(
-    "graphql-lsp-set-intelisense-project.load-configs"
+    "graphql-language-service-server-web-hlambda.load-configs"
   );
   // --------------------------------------------------------------------------------
   // Add ability to execute queries.

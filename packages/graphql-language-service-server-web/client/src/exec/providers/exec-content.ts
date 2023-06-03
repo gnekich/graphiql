@@ -145,25 +145,60 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
           },
         });
 
-        const updateCallback = (_data: string, operation: string) => {
+        const updateCallback = (
+          _data: string,
+          operation: string,
+          endpoint: any
+        ) => {
           let data = _data;
           try {
             data = JSON.stringify(JSON.parse(_data), null, 2);
             // eslint-disable-next-line no-empty
           } catch (error) {}
-          console.log("CALLBACK", data);
+
+          const cssText = `
+          <style>
+          body.vscode-light .header-text {
+            color: #000000bc;
+            font-weight: bold;
+          }
+          
+          body.vscode-dark .header-text {
+            color: #edcb22bc;
+            font-weight: bold;
+          }
+          
+          body.vscode-high-contrast .header-text {
+            color: red;
+            font-weight: bold;
+          }
+          </style>`;
           if (operation === "subscription") {
             this.html =
-              `<div style="color: #edcb22bc; font-weight: bold;">--- ( GraphQL Subscription - New event: ${new Date().toISOString()} ) ---</div>` +
+              `${cssText}<div class="header-text"><hr />GraphQL Subscription - New event: ${new Date().toISOString()}<br/>"${
+                endpoint.name ?? "API"
+              }": ${endpoint?.url
+                ?.replace("http://", "ws://")
+                ?.replace("https://", "wss://")}<br/>Headers: ${Object.keys(
+                endpoint?.headers ?? {}
+              ).join(", ")}<br/><hr style="opacity: 0.5;" /></div>` +
               `<pre style="width: 100%">${data}</pre>` +
               this.html;
           } else if (operation === "mutation") {
             this.html +=
-              `<div style="color: #edcb22bc; font-weight: bold;">--- ( GraphQL Mutation - ${new Date().toISOString()} ) ---</div>` +
+              `${cssText}<div class="header-text"><hr />GraphQL Mutation - ${new Date().toISOString()}<br/>"${
+                endpoint.name ?? "API"
+              }": ${endpoint?.url}<br/>Headers: ${Object.keys(
+                endpoint?.headers ?? {}
+              ).join(", ")}<br/><hr style="opacity: 0.5;" /></div>` +
               `<pre style="width: 100%">${data}</pre>`;
           } else {
             this.html +=
-              `<div style="color: #edcb22bc; font-weight: bold;">--- ( GraphQL Query - ${new Date().toISOString()} ) ---</div>` +
+              `${cssText}<div class="header-text"><hr />GraphQL Query - ${new Date().toISOString()}<br/>"${
+                endpoint.name ?? "API"
+              }": ${endpoint?.url}<br/>Headers: ${Object.keys(
+                endpoint?.headers ?? {}
+              ).join(", ")}<br/><hr style="opacity: 0.5;" /></div>` +
               `<pre style="width: 100%">${data}</pre>`;
           }
           this.update(this.uri);
@@ -190,39 +225,6 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
             updateCallback,
             // projectConfig,
           });
-
-          // const responseExecuteGraphQL = await fetch(endpoint?.url, {
-          //   headers: {
-          //     accept: "*/*",
-          //     "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-          //     "cache-control": "no-cache",
-          //     "content-type": "application/json",
-          //     pragma: "no-cache",
-          //     ...selectedProject?.headers,
-          //   },
-          //   body: JSON.stringify({
-          //     query: this.literal.content,
-          //     variables,
-          //   }),
-          //   method: "POST",
-          //   mode: "cors",
-          //   credentials: "omit",
-          // })
-          //   .then((response) => {
-          //     return response.text();
-          //   })
-          //   .then((fullGraphqlResponseAsText) => {
-          //     return fullGraphqlResponseAsText;
-          //   })
-          //   .catch((error) => {
-          //     console.log("Error downloading schema", error);
-
-          //     vscode.window.showInformationMessage(
-          //       `Error downloading schema ${error.toString(true)}`
-          //     );
-          //     return undefined;
-          //   });
-          // updateCallback(responseExecuteGraphQL, "query");
         } else {
           console.log({
             endpoint,
@@ -238,39 +240,6 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
             updateCallback,
             // projectConfig,
           });
-
-          // const responseExecuteGraphQL = await fetch(endpoint?.url, {
-          //   headers: {
-          //     accept: "*/*",
-          //     "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-          //     "cache-control": "no-cache",
-          //     "content-type": "application/json",
-          //     pragma: "no-cache",
-          //     ...selectedProject?.headers,
-          //   },
-          //   body: JSON.stringify({
-          //     query: this.literal.content,
-          //     variables: {},
-          //   }),
-          //   method: "POST",
-          //   mode: "cors",
-          //   credentials: "omit",
-          // })
-          //   .then((response) => {
-          //     return response.text();
-          //   })
-          //   .then((fullGraphqlResponseAsText) => {
-          //     return fullGraphqlResponseAsText;
-          //   })
-          //   .catch((error) => {
-          //     console.log("Error downloading schema", error);
-
-          //     vscode.window.showInformationMessage(
-          //       `Error downloading schema ${error.toString(true)}`
-          //     );
-          //     return undefined;
-          //   });
-          // updateCallback(responseExecuteGraphQL, "query");
         }
       } else {
         this.reportError(`Error: no endpoint url provided`);

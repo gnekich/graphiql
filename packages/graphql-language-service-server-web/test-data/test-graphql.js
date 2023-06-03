@@ -6,6 +6,12 @@ const doSomethingWithGraphQLString = (str) => {
 };
 
 const myQuery = doSomethingWithGraphQLString(/* GraphQL */ `
+  query getCong {
+    configurations {
+      id
+      scope
+    }
+  }
   query getNotes {
     notes {
       content

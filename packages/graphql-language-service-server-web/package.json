@@ -1,8 +1,8 @@
 {
-	"name": "hlambda-graphql-language-service-server-web",
-	"displayName": "Hlambda GraphQL",
+	"name": "graphql-language-service-server-web-hlambda",
+	"displayName": "GraphQL Hlambda",
 	"description": "A GraphQL language server in a web extension",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"author": "Gordan Nekić",
 	"license": "MIT",
 	"repository": {
@@ -18,7 +18,7 @@
 		"vscode": "^1.43.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:javascript"
 	],
 	"icon": "assets/images/logo.png",
 	"contributors": [
@@ -50,20 +50,12 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "graphql-lsp-set-intelisense-project.load-configs",
-				"title": "Reload GraphQL Projects and Pull GraphQL Schema form API URL or local"
+				"command": "graphql-language-service-server-web-hlambda.load-configs",
+				"title": "GraphQL Hlambda: Select GraphQL Project"
 			},
 			{
-				"command": "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
-				"title": "Pull Remote GraphQL Schema form API URL for offline backup"
-			},
-			{
-				"command": "graphql-lsp-set-intelisense-project.set-dotenv-path",
-				"title": "Update GraphQL dotenv file location in workspace"
-			},
-			{
-				"command": "graphql-lsp-set-intelisense-project.set-experimental-graphql-config-path",
-				"title": "Update GraphQL experimental Project config file location in workspace"
+				"command": "graphql-language-service-server-web-hlambda.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
+				"title": "GraphQL Hlambda: Backup remote GraphQL schema form API URL"
 			}
 		],
 		"configuration": [

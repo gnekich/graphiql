@@ -107,7 +107,7 @@ export const getWorkspaceGraphQLSchema = async (): Promise<{
 
   // Also try to send schema update request.
   await vscode.commands.executeCommand(
-    "graphql-lsp-set-intelisense-project.lsp-schema-update-request"
+    "graphql-language-service-server-web-hlambda.lsp-schema-update-request"
   );
 
   // Return back the selected projects and projects.

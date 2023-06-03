@@ -122,8 +122,14 @@ export async function addHandlers({
       reportDiagnostics(diagnostics, connection);
     }
   );
-  connection.onNotification(DidCloseTextDocumentNotification.type, (params) =>
-    messageProcessor.handleDidCloseNotification(params)
+  connection.onNotification(
+    DidCloseTextDocumentNotification.type,
+    async (params) => {
+      const diagnostics = await messageProcessor.handleDidCloseNotification(
+        params
+      );
+      reportDiagnostics(diagnostics, connection);
+    }
   );
   connection.onRequest(ShutdownRequest.type, () =>
     messageProcessor.handleShutdownRequest()
@@ -132,8 +138,12 @@ export async function addHandlers({
     messageProcessor.handleExitNotification()
   );
 
-  connection.onRequest("$customGraphQL/Schema", (params) => {
-    messageProcessor.setSchema(params);
+  connection.onRequest("$customGraphQL/Schema", async (params) => {
+    const diagnosticsForAllFiles = await messageProcessor.setSchema(params);
+    for (let i = 0; i < diagnosticsForAllFiles.length; i++) {
+      const diagnostics = diagnosticsForAllFiles[i];
+      reportDiagnostics(diagnostics, connection);
+    }
   });
 
   // Ignore cancel requests

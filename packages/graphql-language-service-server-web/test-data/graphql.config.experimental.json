@@ -22,8 +22,7 @@
         {
             "name": "Ladja API - no access",
             "default": false,
-            "url": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_URL}}",
-            "headers": {}
+            "url": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_URL}}"
         },
         {
             "name": "Hasura TEST API",

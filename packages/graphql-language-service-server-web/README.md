@@ -57,7 +57,7 @@ We suggest two approaches;
 
 - one is use of offline schema, you can commit the offline schema and set up graphql project to use that instead of pulling it from remote server. (Pros: no request to server, Cons: out of sync with the latest server schema, no ability to exec query/mutation/subscription from vscode)
 
-- second you can use development proxy server that will ignore CORS or Invalid security certs.
+- second you can use development proxy server that will ignore CORS or Invalid security certs. Using `local-cors-proxy` or `cors-anywhere`
 
 ### Development
 

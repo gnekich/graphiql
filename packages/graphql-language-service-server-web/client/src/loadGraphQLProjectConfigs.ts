@@ -196,12 +196,12 @@ export const loadGraphQLProjectConfigs = async (): Promise<{
   if (typeof selectedProject.file === "string") {
     // Load local workspace file
     await vscode.commands.executeCommand(
-      "graphql-lsp-set-intelisense-project.fetch-workspace-graphql-schema-from-selected-project"
+      "graphql-language-service-server-web-hlambda.fetch-workspace-graphql-schema-from-selected-project"
     );
   } else if (typeof selectedProject.url === "string") {
     // Request the remote schema download
     await vscode.commands.executeCommand(
-      "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project",
+      "graphql-language-service-server-web-hlambda.fetch-remote-graphql-schema-from-selected-project",
       selectedProject
     );
   } else {

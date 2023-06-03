@@ -58,6 +58,11 @@ export function parseDocument(
   // If the text doesn't include GraphQL queries, do not proceed.
   const ext = extname(uri);
 
+  if (uri.startsWith("git:")) {
+    // Ignore git files
+    return [];
+  }
+
   if (fileExtensions.includes(ext)) {
     if (DEFAULT_TAGS.includes(text)) {
       return [];
@@ -77,5 +82,6 @@ export function parseDocument(
     );
     return [{ query, range }];
   }
-  return [{ query: text, range: null }];
+  return [];
+  // return [{ query: text, range: null }]; // We should not return anything if it is not a valid extension, that we know how to parse.
 }

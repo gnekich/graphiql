@@ -181,20 +181,31 @@ export class MessageProcessorWeb {
     return null;
   }
 
-  setSchema(params: any) {
+  async setSchema(params: any): Promise<any[]> {
     this._schema = buildClientSchema(params?.responseSchemaJSON);
 
+    // A hack, whenever there is a new schema sent to LSP, we should "reopen all files" to get the new diagnositc information
     // Reload diagnostics for opened document if any.
+    let allFilesDiagnosticResults = [];
     try {
       const textDocuments = params?.textDocuments ?? [];
-      textDocuments.map((textDocument: any) => {
-        // console.log(textDocument, "Debug");
-        // this.handleDidOpenOrSaveNotification({ textDocument });
-      });
+      allFilesDiagnosticResults = await Promise.all(
+        textDocuments.map((textDocument: any) => {
+          // console.log(textDocument, "Debug");
+          const singleFileDiagnosticResults =
+            this.handleDidOpenOrSaveNotification({ textDocument });
+          return singleFileDiagnosticResults;
+        })
+      );
       // eslint-disable-next-line no-empty
     } catch (error) {
       console.log("reloading text documents", error);
     }
+
+    console.log(
+      "Resending back diagnostics! Reloaded everything need to do this",
+      allFilesDiagnosticResults
+    );
 
     this._logger.info(
       JSON.stringify({
@@ -202,7 +213,7 @@ export class MessageProcessorWeb {
         messageType: "updateSchema",
       })
     );
-    return null;
+    return allFilesDiagnosticResults;
   }
 
   async handleInitializeRequest(
@@ -374,25 +385,26 @@ export class MessageProcessorWeb {
 
       await this._invalidateCache(textDocument, uri, contents);
     } else {
-      const configMatchers = [
-        "graphql.config",
-        "graphqlrc",
-        "graphqlconfig",
-      ].filter(Boolean);
+      // No diagnostics for you... This file is not in the cache
+      // const configMatchers = [
+      //   "graphql.config",
+      //   "graphqlrc",
+      //   "graphqlconfig",
+      // ].filter(Boolean);
 
-      const hasGraphQLConfigFile = configMatchers.some(
-        (v) => uri.match(v)?.length
-      );
-      if (hasGraphQLConfigFile) {
-        this._logger.info("Updating graphql config");
-        // await this._updateGraphQLConfig();
-        return { uri, diagnostics: [] };
-      }
-      // Update graphql config only when graphql config is saved!
-      const cachedDocument = this._getCachedDocument(uri);
-      if (cachedDocument) {
-        contents = cachedDocument.contents;
-      }
+      // const hasGraphQLConfigFile = configMatchers.some(
+      //   (v) => uri.match(v)?.length
+      // );
+      // if (hasGraphQLConfigFile) {
+      //   this._logger.info("Updating graphql config");
+      //   // await this._updateGraphQLConfig();
+      //   return { uri, diagnostics: [] };
+      // }
+      // // Update graphql config only when graphql config is saved!
+      // const cachedDocument = this._getCachedDocument(uri);
+      // if (cachedDocument) {
+      //   contents = cachedDocument.contents;
+      // }
       return null;
     }
     // if (!this._graphQLCache) {
@@ -745,12 +757,14 @@ export class MessageProcessorWeb {
     return {};
   }
 
-  handleDidCloseNotification(params: DidCloseTextDocumentParams): void {
+  async handleDidCloseNotification(
+    params: DidCloseTextDocumentParams
+  ): Promise<PublishDiagnosticsParams | null> {
     if (
       !this._isInitialized
       // || !this._graphQLCache
     ) {
-      return;
+      return null;
     }
     // For every `textDocument/didClose` event, delete the cached entry.
     // This is to keep a low memory usage && switch the source of truth to
@@ -774,6 +788,11 @@ export class MessageProcessorWeb {
         fileName: uri,
       })
     );
+
+    console.log("Clearing the diagnostics!");
+    // LSP Server should clear the diagnosics when the file is closed.
+    const diagnostics: Diagnostic[] = [];
+    return { uri, diagnostics };
   }
 
   async handleDefinitionRequest(
