@@ -15,8 +15,15 @@
             "url": "{{MAIN_GRAPHQL_API_INTROSPECTION_URL}}",
             "headers": {
                 "x-hasura-admin-secret": "{{MAIN_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET}}",
-                "Authorization": "Bearer ey... {{PUT_YOUR_CUSTOM_ENV_VALUE_NAME}}"
+                "Authorization": "Bearer ey... {{PUT_YOUR_CUSTOM_ENV_VALUE_NAME}}",
+                "{{ENV_KEY_VALUE}}": "labud"
             }
+        },
+        {
+            "name": "Ladja API - no access",
+            "default": false,
+            "url": "{{ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_URL}}",
+            "headers": {}
         },
         {
             "name": "Hasura TEST API",
@@ -25,6 +32,11 @@
             "headers": {
                 "x-hasura-admin-secret": "demo"
             }
+        },
+        {
+            "name": "Offline GraphQL Schema Project 1",
+            "default": false,
+            "file": "offline-graphql-schema-project1.json"
         }
     ]
 }

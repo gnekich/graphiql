@@ -154,16 +154,16 @@ export class GraphQLContentProvider implements TextDocumentContentProvider {
           console.log("CALLBACK", data);
           if (operation === "subscription") {
             this.html =
-              `--- (GraphQL Subscription - New event: ${new Date().toISOString()}) ---` +
+              `<div style="color: #edcb22bc; font-weight: bold;">--- ( GraphQL Subscription - New event: ${new Date().toISOString()} ) ---</div>` +
               `<pre style="width: 100%">${data}</pre>` +
               this.html;
           } else if (operation === "mutation") {
             this.html +=
-              `--- (GraphQL Mutation - ${new Date().toISOString()}) ---` +
+              `<div style="color: #edcb22bc; font-weight: bold;">--- ( GraphQL Mutation - ${new Date().toISOString()} ) ---</div>` +
               `<pre style="width: 100%">${data}</pre>`;
           } else {
             this.html +=
-              `--- (GraphQL Query - ${new Date().toISOString()}) ---` +
+              `<div style="color: #edcb22bc; font-weight: bold;">--- ( GraphQL Query - ${new Date().toISOString()} ) ---</div>` +
               `<pre style="width: 100%">${data}</pre>`;
           }
           this.update(this.uri);

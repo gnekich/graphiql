@@ -1,9 +1,16 @@
+// import { gql } from '@apolo/client'
 console.log("regular javascript file");
 
 const doSomethingWithGraphQLString = (str) => {
   // Fetch Hasura/GraphQL API do your magic...
   return str;
 };
+
+const myQueryFirst = doSomethingWithGraphQLString(/* GraphQL */ `
+  query mistake {
+    aaa
+  }
+`);
 
 const myQuery = doSomethingWithGraphQLString(/* GraphQL */ `
   mutation a {
@@ -16,7 +23,6 @@ const myQuery = doSomethingWithGraphQLString(/* GraphQL */ `
     notes {
       id
       subject
-      type
     }
   }
   query getNotes {

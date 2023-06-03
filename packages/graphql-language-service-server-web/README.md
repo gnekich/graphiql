@@ -49,6 +49,16 @@ ADMIN_DASHBOARD_GRAPHQL_API_INTROSPECTION_HASURA_ADMIN_SECRET="my-local-developm
 Add or remove headers based on your API type, you can use custom headers.
 This way you can test your API as a different role, just create multiple projects with different headers.
 
+# Issues
+
+- You can have issue with the CORS or invalid TLS certificates, because this extension is built to be run for in web version of IDE it has to respect browser security standards thus we can't establish connections to remote that does not support CORS or has invalid security cert.
+
+We suggest two approaches;
+
+- one is use of offline schema, you can commit the offline schema and set up graphql project to use that instead of pulling it from remote server. (Pros: no request to server, Cons: out of sync with the latest server schema, no ability to exec query/mutation/subscription from vscode)
+
+- second you can use development proxy server that will ignore CORS or Invalid security certs.
+
 ### Development
 
 - Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder

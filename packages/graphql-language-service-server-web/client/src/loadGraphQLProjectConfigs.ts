@@ -8,160 +8,208 @@ import { LanguageClient } from "vscode-languageclient/browser";
 
 import parseDotEnvContent from "./utils/parseDotEnvContent";
 import readWorkspaceFileContents from "./utils/readWorkspaceFileContents";
-import introspectionQueryString from "./utils/introspectionQueryString";
 
-export const loadGraphQLProjectConfigs =
-  (context: vscode.ExtensionContext, client: LanguageClient) =>
-  async (
-    content: string
-  ): Promise<{ allProjectsFromAllWorkspaces: any; selectedProject: any }> => {
-    // First thing we can do is to try to load the .env file and graphql.config file to parse projects in workspace
+import store from "./store";
 
-    // Go through every workspace folder.
-    const workspaces = await Promise.all(
-      vscode.workspace.workspaceFolders.map(async (workspace) => {
-        // const message = `Found workspace ${workspace.uri.toString()}`;
-        // vscode.window.showInformationMessage(message);
+export const loadGraphQLProjectConfigs = async (): Promise<{
+  allProjectsFromAllWorkspaces: any;
+  selectedProject: any;
+}> => {
+  // First thing we can do is to try to load the .env file and graphql.config file to parse projects in workspace
 
-        const dotEnvFileText = await readWorkspaceFileContents(
-          workspace,
-          ".env"
+  // Go through every workspace folder.
+  const workspaces = await Promise.all(
+    vscode.workspace.workspaceFolders.map(async (workspace) => {
+      // const message = `Found workspace ${workspace.uri.toString()}`;
+      // vscode.window.showInformationMessage(message);
+
+      let dotEnvFileText: string | undefined;
+
+      const dotEnvFileListToCheck = [
+        ".env",
+        ".env.vscode", // .env is not found, try ".env.vscode" (Because this is env for vscode extension)
+        "metadata/.env", // .env is not found, try ./metadata/.env | Hlambda support
+        "metadata/.env.vscode", // .env is not found, try ".env.vscode" (Because this is env for extension) |  Hlambda support
+      ];
+      for (let i = 0; i < dotEnvFileListToCheck.length; i++) {
+        const fileToCheck = dotEnvFileListToCheck[i];
+        if (typeof dotEnvFileText === "undefined") {
+          dotEnvFileText = await readWorkspaceFileContents(
+            workspace,
+            fileToCheck
+          );
+          if (typeof dotEnvFileText !== "undefined") {
+            console.log(`Loaded extension envs from ${fileToCheck}`);
+          }
+        } else {
+          break;
+        }
+      }
+
+      const workspaceEnvironmentVariables = {
+        ...parseDotEnvContent(dotEnvFileText),
+      };
+
+      let experimentalProjectConfigContent: string | undefined;
+
+      const experimentalProjectConfigFileListToCheck = [
+        "graphql.config.experimental.json",
+        ".graphql.config.experimental.json",
+        "vscode.graphql.config.json",
+        ".vscode.graphql.config.json",
+        "metadata/graphql.config.experimental.json", // Hlambda support
+        "metadata/.graphql.config.experimental.json", //  Hlambda support
+        "metadata/vscode.graphql.config.json", //  Hlambda support
+        "metadata/.vscode.graphql.config.json", //  Hlambda support
+      ];
+      for (
+        let i = 0;
+        i < experimentalProjectConfigFileListToCheck.length;
+        i++
+      ) {
+        const fileToCheck = experimentalProjectConfigFileListToCheck[i];
+        if (typeof experimentalProjectConfigContent === "undefined") {
+          experimentalProjectConfigContent = await readWorkspaceFileContents(
+            workspace,
+            fileToCheck
+          );
+          if (typeof experimentalProjectConfigContent !== "undefined") {
+            console.log(`Loaded graphql projects from ${fileToCheck}`);
+          }
+        } else {
+          break;
+        }
+      }
+
+      let experimentalProjectConfig = { projects: [] };
+      try {
+        experimentalProjectConfig = JSON.parse(
+          experimentalProjectConfigContent
         );
 
-        const workspaceEnvironmentVariables = {
-          ...parseDotEnvContent(dotEnvFileText),
-        };
+        // For every key in env variables, we want to replace placeholders in string types of the object.
+      } catch (error) {
+        console.log(error);
+      }
 
-        const experimentalProjectConfigContent =
-          await readWorkspaceFileContents(
-            workspace,
-            "graphql.config.experimental.json"
-          );
+      return {
+        workspace,
+        workspaceEnvironmentVariables,
+        experimentalProjectConfig,
+      };
+    })
+  );
 
-        let experimentalProjectConfig = { projects: [] };
-        try {
-          experimentalProjectConfig = JSON.parse(
-            experimentalProjectConfigContent
-          );
+  // Fill the project object with the env variable values.
+  const allProjectsFromAllWorkspaces = workspaces.reduce((acc, item) => {
+    const projects = item?.experimentalProjectConfig?.projects ?? [];
+    const workspaceEnvironmentVariables =
+      item?.workspaceEnvironmentVariables ?? {};
+    projects.map((project) => {
+      // We want to support key replacing also, but that can't be done by "black magic" parse(stringify()) replacer function.
+      const xObjectKeyTransformFromEnv = (obj: any) => {
+        return Object.keys(obj).reduce((acc, key) => {
+          let valueOfTheKeyOfTheObject = key;
+          let valueOfTheObject = obj[key];
 
-          // For every key in env variables, we want to replace placeholders in string types of the object.
-        } catch (error) {
-          console.log(error);
-        }
-
-        return {
-          workspace,
-          workspaceEnvironmentVariables,
-          experimentalProjectConfig,
-        };
-      })
-    );
-
-    // Fill the project object with the env variable values.
-    const allProjectsFromAllWorkspaces = workspaces.reduce((acc, item) => {
-      const projects = item?.experimentalProjectConfig?.projects ?? [];
-      const workspaceEnvironmentVariables =
-        item?.workspaceEnvironmentVariables ?? {};
-      projects.map((project) => {
-        // At this point we can also do some magic, replace the configs with the workspaces env values we parsed before.
-        // WARNING BLACK MAGIC
-        const projectWithEnvValues = JSON.parse(
-          JSON.stringify(project, (key, value) => {
-            let newValue = value;
+          // Recursion
+          if (typeof valueOfTheObject === "string") {
             for (const [keyEnv, valueEnv] of Object.entries(
               workspaceEnvironmentVariables
             )) {
-              if (typeof value === "string") {
-                newValue = newValue.replace(`{{${keyEnv}}}`, valueEnv);
+              if (typeof valueOfTheKeyOfTheObject === "string") {
+                valueOfTheKeyOfTheObject = valueOfTheKeyOfTheObject.replace(
+                  `{{${keyEnv}}}`,
+                  valueEnv
+                );
               }
             }
-            return newValue;
-          })
-        );
-        // Black magic ended, you survived ;)
-        acc.push({
-          ...projectWithEnvValues,
-        });
-      });
-      return acc;
-    }, []);
+          } else if (typeof valueOfTheObject === "object") {
+            valueOfTheObject = xObjectKeyTransformFromEnv(valueOfTheObject);
+          }
 
-    // --------------------------------------------------------------------------------
+          acc[valueOfTheKeyOfTheObject] = valueOfTheObject;
+          return acc;
+        }, {});
+      };
+      const projectWithReplacedKeysWithEnvValues =
+        xObjectKeyTransformFromEnv(project);
 
-    // Be smart, first check if there is only one project or at least 1 default project
-    let target = { target: undefined };
-    const findFirstDefaultProject = allProjectsFromAllWorkspaces.find(
-      (o) => o?.default === true
-    );
-    if (allProjectsFromAllWorkspaces.length === 1) {
-      target.target = allProjectsFromAllWorkspaces[0];
-    } else if (findFirstDefaultProject) {
-      target.target = findFirstDefaultProject;
-    } else {
-      // Select from workspaces if multiple...
-      target = await vscode.window.showQuickPick(
-        allProjectsFromAllWorkspaces.map((item, index) => {
-          return {
-            label: `Project: ${item?.name}`,
-            description: `${item?.url}`,
-            target: item,
-          };
+      // Update: The fun part is now we don't need black magic with the json stringify replacer because we already are iterating through all values.
+
+      // At this point we can also do some magic, replace the configs with the workspaces env values we parsed before.
+      // WARNING BLACK MAGIC
+      const projectWithEnvValues = JSON.parse(
+        JSON.stringify(projectWithReplacedKeysWithEnvValues, (key, value) => {
+          let newValue = value;
+          for (const [keyEnv, valueEnv] of Object.entries(
+            workspaceEnvironmentVariables
+          )) {
+            if (typeof value === "string") {
+              newValue = newValue.replace(`{{${keyEnv}}}`, valueEnv);
+            }
+          }
+          return newValue;
         })
       );
-    }
-
-    const selectedProject = target?.target;
-    if (!selectedProject) {
-      return;
-    }
-
-    // TODO: add support for offline schema.
-
-    const responseSchemaJSON = await fetch(selectedProject?.url, {
-      headers: {
-        accept: "*/*",
-        "cache-control": "no-cache",
-        "content-type": "application/json",
-        pragma: "no-cache",
-        ...selectedProject?.headers,
-      },
-      body: introspectionQueryString,
-      method: "POST",
-      mode: "cors",
-      credentials: "omit",
-    })
-      .then((response) => {
-        return response.json(); // Pare json response
-      })
-      .then((fullGraphqlResponseJson) => {
-        return fullGraphqlResponseJson.data; // Extract only data
-      })
-      .catch((error) => {
-        console.log("Error downloading schema", error);
-
-        vscode.window.showInformationMessage(
-          `Error downloading schema ${error.toString(true)}`
-        );
-        return undefined;
+      // Black magic ended, you survived ;)
+      acc.push({
+        ...projectWithEnvValues,
       });
-
-    if (!responseSchemaJSON) {
-      return;
-    }
-
-    console.log("Schema downloaded", responseSchemaJSON);
-    vscode.window.showInformationMessage(
-      `Schema downloaded for project ${selectedProject?.name}`
-    );
-
-    // Send to the server new schema in JSON representation (from API)
-    client.sendRequest("$customGraphQL/Schema", {
-      responseSchemaJSON,
-      project: selectedProject,
     });
+    return acc;
+  }, []);
 
-    // Return back the selected projects and projects.
-    return { allProjectsFromAllWorkspaces, selectedProject };
-  };
+  // --------------------------------------------------------------------------------
+
+  // Be smart, first check if there is only one project or at least 1 default project
+  let target = { target: undefined };
+  const findFirstDefaultProject = allProjectsFromAllWorkspaces.find(
+    (o) => o?.default === true
+  );
+  if (allProjectsFromAllWorkspaces.length === 1) {
+    target.target = allProjectsFromAllWorkspaces[0];
+  } else if (findFirstDefaultProject) {
+    target.target = findFirstDefaultProject;
+  } else {
+    // Select from workspaces if multiple...
+    target = await vscode.window.showQuickPick(
+      allProjectsFromAllWorkspaces.map((item, index) => {
+        return {
+          label: `Project: ${item?.name}`,
+          description: `${item?.file ?? item?.url}`, // Target can have file url
+          target: item,
+        };
+      })
+    );
+  }
+
+  const selectedProject = target?.target;
+  if (!selectedProject) {
+    return;
+  }
+
+  // Save selected project and all configs to store.
+  store.selectedProject = selectedProject;
+  store.allProjectsFromAllWorkspaces = allProjectsFromAllWorkspaces;
+
+  if (typeof selectedProject.file === "string") {
+    // Load local workspace file
+    await vscode.commands.executeCommand(
+      "graphql-lsp-set-intelisense-project.fetch-workspace-graphql-schema-from-selected-project"
+    );
+  } else if (typeof selectedProject.url === "string") {
+    // Request the remote schema download
+    await vscode.commands.executeCommand(
+      "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project",
+      selectedProject
+    );
+  } else {
+    console.log("Project does not have; url nor file");
+  }
+
+  // Return back the selected projects and projects.
+  return { allProjectsFromAllWorkspaces, selectedProject };
+};
 
 export default loadGraphQLProjectConfigs;

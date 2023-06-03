@@ -1,15 +1,16 @@
 {
-	"name": "graphql-language-service-server-web",
-	"displayName": "Hlambd GraphQL",
+	"name": "hlambda-graphql-language-service-server-web",
+	"displayName": "Hlambda GraphQL",
 	"description": "A GraphQL language server in a web extension",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"author": "Gordan Nekić",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Microsoft/vscode-extension-samples"
 	},
-	"publisher": "Cyberpunk d.o.o. | Hyper Lambda Project",
+	"publisher": "hlambda",
+	"publisherName": "Cyberpunk d.o.o. | Hyper Lambda Project",
 	"keywords": [
 		"multi-root ready"
 	],
@@ -49,8 +50,12 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "graphql-lsp-set-intelisense-project.provide-api-url",
-				"title": "Reload GraphQL Projects and Pull GraphQL Schema form API URL"
+				"command": "graphql-lsp-set-intelisense-project.load-configs",
+				"title": "Reload GraphQL Projects and Pull GraphQL Schema form API URL or local"
+			},
+			{
+				"command": "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
+				"title": "Pull Remote GraphQL Schema form API URL for offline backup"
 			},
 			{
 				"command": "graphql-lsp-set-intelisense-project.set-dotenv-path",

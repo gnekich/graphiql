@@ -10,7 +10,10 @@ import { LanguageClientOptions } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/browser";
 
 import loadGraphQLProjectConfigs from "./loadGraphQLProjectConfigs";
+import fetchRemoteGraphQLSchema from "./fetchRemoteGraphQLSchema";
+import getWorkspaceGraphQLSchema from "./getWorkspaceGraphQLSchema";
 import setupExecuteGraphQLFunctionality from "./exec/setupExecuteGraphQLFunctionality";
+import store from "./store";
 
 // this method is called when vs code is activated
 export async function activate(context: ExtensionContext) {
@@ -44,28 +47,87 @@ export async function activate(context: ExtensionContext) {
     console.log("graphql-language-service-server-web server is ready");
   });
 
+  // Add command to load project config. (Command used to start everything)
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "graphql-lsp-set-intelisense-project.provide-api-url",
+      "graphql-lsp-set-intelisense-project.load-configs",
       async () => {
-        await loadGraphQLProjectConfigs(context, client)("");
+        return await loadGraphQLProjectConfigs();
+      }
+    )
+  );
+
+  // Add command to fetch remote configs
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project",
+      async () => {
+        return await fetchRemoteGraphQLSchema();
+      }
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "graphql-lsp-set-intelisense-project.fetch-workspace-graphql-schema-from-selected-project",
+      async () => {
+        return getWorkspaceGraphQLSchema();
+      }
+    )
+  );
+
+  // This commands is used to create offline graphql schema backup.
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "graphql-lsp-set-intelisense-project.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
+      async () => {
+        const result = await fetchRemoteGraphQLSchema();
+        const doc = await vscode.workspace.openTextDocument({
+          language: "json",
+          content: JSON.stringify(result.responseSchemaJSON, null, 2),
+        });
+        vscode.window.showTextDocument(doc);
+        return;
+      }
+    )
+  );
+
+  // Send update schema request to LSP.
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "graphql-lsp-set-intelisense-project.lsp-schema-update-request",
+      async () => {
+        // Send to the server new schema in JSON representation (from API)
+        const { responseSchemaJSON, selectedProject } = store;
+        if (!responseSchemaJSON) {
+          vscode.window.showInformationMessage(
+            `Missing schema, please configure the projects.`
+          );
+          return;
+        }
+        if (!selectedProject) {
+          vscode.window.showInformationMessage(`No project is selected.`);
+          return;
+        }
+        client.sendRequest("$customGraphQL/Schema", {
+          responseSchemaJSON,
+          project: selectedProject,
+          textDocuments: JSON.parse(
+            JSON.stringify(vscode.workspace.textDocuments)
+          ),
+        });
+        return true;
       }
     )
   );
 
   // Try to load configs without any user interaction. (In cases where you have 1 workspace and 1 project, or at least 1 default project and schema is downloaded)
-  const configResults = await loadGraphQLProjectConfigs(context, client)("");
-
-  if (!configResults?.selectedProject) {
-    return;
-  }
+  // Start!
+  await vscode.commands.executeCommand(
+    "graphql-lsp-set-intelisense-project.load-configs"
+  );
   // --------------------------------------------------------------------------------
   // Add ability to execute queries.
-  await setupExecuteGraphQLFunctionality(
-    context,
-    configResults?.allProjectsFromAllWorkspaces,
-    configResults?.selectedProject
-  )();
+  await setupExecuteGraphQLFunctionality(context);
 }
 
 function createWorkerLanguageClient(
@@ -82,7 +144,7 @@ function createWorkerLanguageClient(
   // create the language server client to communicate with the server running in the worker
   return new LanguageClient(
     "graphql-language-service-server-web",
-    "GraphQL LSP Web Extension",
+    "GraphQL Hlambda LSP Web Extension",
     clientOptions,
     worker
   );

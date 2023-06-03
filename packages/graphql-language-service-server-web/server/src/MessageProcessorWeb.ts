@@ -183,6 +183,25 @@ export class MessageProcessorWeb {
 
   setSchema(params: any) {
     this._schema = buildClientSchema(params?.responseSchemaJSON);
+
+    // Reload diagnostics for opened document if any.
+    try {
+      const textDocuments = params?.textDocuments ?? [];
+      textDocuments.map((textDocument: any) => {
+        // console.log(textDocument, "Debug");
+        // this.handleDidOpenOrSaveNotification({ textDocument });
+      });
+      // eslint-disable-next-line no-empty
+    } catch (error) {
+      console.log("reloading text documents", error);
+    }
+
+    this._logger.info(
+      JSON.stringify({
+        type: "usage",
+        messageType: "updateSchema",
+      })
+    );
     return null;
   }
 
@@ -379,41 +398,54 @@ export class MessageProcessorWeb {
     // if (!this._graphQLCache) {
     //   return { uri, diagnostics };
     // }
-    // try {
-    //   const project = this._graphQLCache.getProjectForFile(uri);
-    //   if (
-    //     this._isInitialized &&
-    //     project?.extensions?.languageService?.enableValidation !== false
-    //   ) {
-    //     await Promise.all(
-    //       contents.map(async ({ query, range }) => {
-    //         const results = await this._languageService.getDiagnostics(
-    //           query,
-    //           uri,
-    //           this._isRelayCompatMode(query)
-    //         );
-    //         if (results && results.length > 0) {
-    //           diagnostics.push(
-    //             ...processDiagnosticsMessage(results, query, range)
-    //           );
-    //         }
-    //       })
-    //     );
-    //   }
 
-    //   this._logger.log(
-    //     JSON.stringify({
-    //       type: "usage",
-    //       messageType: "textDocument/didOpenOrSave",
-    //       projectName: project?.name,
-    //       fileName: uri,
-    //     })
-    //   );
-    // } catch (err) {
-    //   this._handleConfigError({ err, uri });
-    // }
+    const schema = this._schema;
 
-    return { uri, diagnostics };
+    if (!schema) {
+      return { uri, diagnostics };
+    }
+
+    try {
+      // const project = this._graphQLCache.getProjectForFile(uri);
+      if (
+        this._isInitialized
+        // &&
+        // project?.extensions?.languageService?.enableValidation !== false
+      ) {
+        await Promise.all(
+          contents.map(async ({ query, range }) => {
+            // const results = await this._languageService.getDiagnostics(
+            //   query,
+            //   uri,
+            //   this._isRelayCompatMode(query)
+            // );
+            const results = getDiagnostics(
+              //cachedDocument.contents[0].query, // BUG! [0]
+              query,
+              schema
+            );
+            if (results && results.length > 0) {
+              diagnostics.push(
+                ...processDiagnosticsMessage(results, query, range)
+              );
+            }
+          })
+        );
+      }
+
+      this._logger.log(
+        JSON.stringify({
+          type: "usage",
+          messageType: "textDocument/didOpenOrSave",
+          // projectName: project?.name,
+          fileName: uri,
+        })
+      );
+    } catch (err) {
+      // this._handleConfigError({ err, uri });
+    }
+
+    return JSON.parse(JSON.stringify({ uri, diagnostics }));
   }
 
   async handleDidChangeNotification(
@@ -608,7 +640,8 @@ export class MessageProcessorWeb {
           //   false // this._isRelayCompatMode(query)
           // );
           const results = getDiagnostics(
-            cachedDocument.contents[0].query,
+            //cachedDocument.contents[0].query, // BUG! [0]
+            query,
             schema
           );
           if (results && results.length > 0) {
@@ -917,6 +950,7 @@ export class MessageProcessorWeb {
           //   "cachedDocument handleWorkspaceSymbolRequest",
           //   cachedDocument
           // );
+          console.log("WORKSPACE!", cachedDocument.contents[0].query);
           const docSymbols = await this._languageService.getDocumentSymbols(
             cachedDocument.contents[0].query,
             uri
