@@ -1,16 +1,20 @@
 {
-	"name": "graphql-language-service-server-web-hlambda",
+	"name": "graphql-language-service-server-web",
 	"displayName": "GraphQL Hlambda",
 	"description": "A GraphQL language server in a web extension",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"author": "Gordan Nekić",
 	"license": "MIT",
+	"publisher": "hlambda",
+	"publisherDisplayName": "Cyberpunk d.o.o. | Hyper Lambda Project",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-extension-samples"
+		"url": "http://github.com/hlambda/graphql-language-service-server-web"
 	},
-	"publisher": "hlambda",
-	"publisherName": "Cyberpunk d.o.o. | Hyper Lambda Project",
+	"homepage": "https://github.com/hlambda/graphql-language-service-server-web/tree/main#readme",
+	"bugs": {
+		"url": "https://github.com/hlambda/graphql-language-service-server-web/issues?q=issue+label:lsp-server"
+	},
 	"keywords": [
 		"multi-root ready"
 	],
@@ -50,11 +54,11 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "graphql-language-service-server-web-hlambda.load-configs",
+				"command": "graphql-language-service-server-web.load-configs",
 				"title": "GraphQL Hlambda: Select GraphQL Project"
 			},
 			{
-				"command": "graphql-language-service-server-web-hlambda.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
+				"command": "graphql-language-service-server-web.fetch-remote-graphql-schema-from-selected-project-save-offline-backup",
 				"title": "GraphQL Hlambda: Backup remote GraphQL schema form API URL"
 			}
 		],

@@ -1,3 +1,3 @@
 export const constants = {
-  COMMAND_PREFIX: "graphql-language-service-server-web-hlambda",
+  COMMAND_PREFIX: "graphql-language-service-server-web",
 };

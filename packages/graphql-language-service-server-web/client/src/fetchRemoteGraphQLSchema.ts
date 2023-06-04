@@ -64,7 +64,7 @@ export const fetchRemoteGraphQLSchema = async (): Promise<{
 
   // Also try to send schema update request.
   await vscode.commands.executeCommand(
-    "graphql-language-service-server-web-hlambda.lsp-schema-update-request"
+    "graphql-language-service-server-web.lsp-schema-update-request"
   );
 
   // Return back the selected projects and projects.

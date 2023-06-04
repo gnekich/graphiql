@@ -2,7 +2,6 @@
 
 # Still todo
 
-⦿ Fix the issue with the reloading new project. (For now you can reload the window to fix the issue.)
 ⦿ Add GraphQL tag definitions in LSP. (Refactor LSP code)
 
 # Done
@@ -15,3 +14,4 @@
 ✅ Add support for offline GraphQL Schema files.
 ✅ Fix the issue with the wrong diagnostic messages for multiple templates.
 ✅ Intellisense should work on file open.
+✅ Fix the issue with the reloading new project. (For now you can reload the window to fix the issue.)
